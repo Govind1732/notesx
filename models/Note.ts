@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 export interface INote extends mongoose.Document {
   title: string;
-  content: string[];
+  content: any; // Tiptap JSON document
   folderId?: mongoose.Types.ObjectId | null;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,13 +17,17 @@ const NoteSchema = new mongoose.Schema<INote>(
       maxlength: [100, "Title cannot be more than 100 characters"],
     },
     content: {
-      type: [String],
-      default: [],
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
     },
     folderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Folder",
       default: null,
+    },
+    userId: {
+      type: String,
+      required: [true, "Please provide a userId"],
     },
   },
   {

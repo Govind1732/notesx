@@ -5,7 +5,7 @@ import React from "react";
 interface Note {
   _id: string;
   title: string;
-  content: string[];
+  content: any; // Tiptap JSON document
   updatedAt: string;
 }
 
@@ -53,6 +53,44 @@ function HighlightText({
   );
 }
 
+/**
+ * Extracts plain text preview from Tiptap JSON content.
+ * Falls back to handling legacy string[] content.
+ */
+function getPreviewText(content: any): string {
+  if (!content) return "No content";
+
+  // Legacy string[] format
+  if (Array.isArray(content)) {
+    const filtered = content.filter((c: string) => c.trim());
+    return filtered.length > 0
+      ? filtered.slice(0, 2).join(" · ")
+      : "No content";
+  }
+
+  // Tiptap JSON format
+  if (content.type === "doc" && Array.isArray(content.content)) {
+    const texts: string[] = [];
+    const extractText = (node: any) => {
+      if (node.text) {
+        texts.push(node.text);
+      }
+      if (node.content) {
+        node.content.forEach(extractText);
+      }
+    };
+    content.content.forEach(extractText);
+    const joined = texts.join(" ").trim();
+    return joined.length > 0
+      ? joined.length > 80
+        ? joined.slice(0, 80) + "..."
+        : joined
+      : "No content";
+  }
+
+  return "No content";
+}
+
 export default function NoteItem({
   note,
   isSelected,
@@ -66,26 +104,19 @@ export default function NoteItem({
     }).format(new Date(dateStr));
   };
 
-  // Get a preview string from the content array
-  const preview =
-    note.content.filter((c) => c.trim()).length > 0
-      ? note.content
-          .filter((c) => c.trim())
-          .slice(0, 2)
-          .join(" · ")
-      : "No content";
+  const preview = getPreviewText(note.content);
 
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3.5 border-b border-stone-100 dark:border-stone-800/50 transition-colors ${
+      className={`w-full text-left px-5 py-4 border-b border-stone-100 dark:border-stone-800/50 transition-all duration-200 cursor-pointer ${
         isSelected
-          ? "bg-stone-200/70 dark:bg-stone-800/70"
-          : "hover:bg-stone-100 dark:hover:bg-stone-900/50"
+          ? "bg-stone-100/80 dark:bg-stone-800/50 shadow-sm relative z-10"
+          : "hover:bg-stone-50 dark:hover:bg-stone-900/40"
       }`}
     >
       <h3
-        className={`text-sm font-semibold mb-1 line-clamp-1 ${
+        className={`text-[15px] font-semibold mb-1.5 line-clamp-1 ${
           isSelected
             ? "text-stone-900 dark:text-stone-50"
             : "text-stone-800 dark:text-stone-200"

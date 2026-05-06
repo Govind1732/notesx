@@ -10,7 +10,7 @@ import { useSearch } from "@/lib/useSearch";
 interface Note {
   _id: string;
   title: string;
-  content: string[];
+  content: any; // Tiptap JSON document
   folderId?: string | null;
   updatedAt: string;
 }
@@ -103,10 +103,15 @@ export default function Home() {
   const handleNoteSaved = (savedNote: {
     _id?: string;
     title: string;
-    content: string[];
+    content: any;
     folderId?: string | null;
     updatedAt?: string;
   }) => {
+    // If backend created an 'untitled' folder, fetch folders again to update the UI
+    if (savedNote.folderId && !folders.some((f) => f._id === savedNote.folderId)) {
+      fetchFolders();
+    }
+
     if (creatingNew && savedNote._id) {
       setCreatingNew(false);
       setSelectedNoteId(savedNote._id);
@@ -146,7 +151,7 @@ export default function Home() {
   const newNoteData: Note = {
     _id: "",
     title: "",
-    content: [""],
+    content: null,
     folderId: selectedFolderId || "",
     updatedAt: new Date().toISOString(),
   };
@@ -168,13 +173,13 @@ export default function Home() {
       />
 
       {/* Panel 2: Notes list */}
-      <div className="w-72 lg:w-80 shrink-0 border-r border-stone-200 dark:border-stone-800 flex flex-col bg-white dark:bg-stone-950 h-full">
+      <div className={`w-full md:w-72 lg:w-80 shrink-0 border-r border-stone-100 dark:border-stone-800/50 flex flex-col bg-stone-50/50 dark:bg-stone-950 h-full ${editorNote ? "hidden md:flex" : "flex"}`}>
         {/* List header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-stone-200 dark:border-stone-800 shrink-0">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors md:hidden"
+              className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors md:hidden cursor-pointer"
             >
               <Menu className="w-4 h-4" />
             </button>
@@ -184,7 +189,7 @@ export default function Home() {
           </div>
           <button
             onClick={handleCreateNote}
-            className="p-1.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-900 rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors"
+            className="p-1.5 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-900 rounded-lg hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
             title="New Note"
           >
             <PlusIcon className="w-4 h-4" />
@@ -192,22 +197,22 @@ export default function Home() {
         </div>
 
         {/* Search bar */}
-        <div className="px-3 py-2.5 border-b border-stone-100 dark:border-stone-800/50 shrink-0">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
+        <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800/50 shrink-0">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 transition-colors group-focus-within:text-stone-600 dark:group-focus-within:text-stone-300 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="w-full pl-8 pr-8 py-1.5 text-xs bg-stone-100 dark:bg-stone-900 rounded-lg border-none outline-none placeholder:text-stone-400 dark:placeholder:text-stone-600 focus:ring-1 focus:ring-stone-300 dark:focus:ring-stone-700 transition-all"
+              className="w-full pl-9 pr-9 py-2 text-sm bg-stone-50 dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 outline-none placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:ring-2 focus:ring-stone-200 dark:focus:ring-stone-700 focus:border-transparent transition-all shadow-sm"
             />
             {searchQuery && (
               <button
                 onClick={clearSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 rounded-full"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 rounded-full bg-stone-200/50 dark:bg-stone-800/50 cursor-pointer"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -227,7 +232,7 @@ export default function Home() {
       </div>
 
       {/* Panel 3: Editor */}
-      <div className="flex-1 min-w-0 h-full bg-white dark:bg-stone-900/30">
+      <div className={`flex-1 min-w-0 h-full bg-white dark:bg-stone-950/50 ${editorNote ? "block" : "hidden md:block"}`}>
         {editorNote ? (
           <NoteEditor
             key={editorNote._id || "new"}
@@ -235,11 +240,17 @@ export default function Home() {
             folders={folders}
             onDelete={handleNoteDeleted}
             onSaved={handleNoteSaved}
+            onBack={() => {
+              setSelectedNoteId(null);
+              setCreatingNew(false);
+            }}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-stone-400 dark:text-stone-600">
-            <FileText className="w-12 h-12 mb-3" />
-            <p className="text-sm">Select a note or create a new one</p>
+          <div className="flex flex-col items-center justify-center h-full w-full text-stone-400 dark:text-stone-600 animate-in fade-in duration-500">
+            <div className="w-20 h-20 bg-stone-50 dark:bg-stone-900/50 rounded-3xl flex items-center justify-center mb-5 border border-stone-200/60 dark:border-stone-800 shadow-sm">
+              <FileText className="w-10 h-10 text-stone-300 dark:text-stone-700" />
+            </div>
+            <p className="text-[15px] font-medium text-stone-500">Select a note or create a new one</p>
           </div>
         )}
       </div>

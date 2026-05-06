@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { FolderPlus, Folder, Trash2, FileText, X } from "lucide-react";
+import { FolderPlus, Folder, Trash2, FileText, X, LogOut } from "lucide-react";
+import { logout } from "@/app/auth/actions";
 
 interface FolderType {
   _id: string;
@@ -30,6 +31,7 @@ export default function Sidebar({
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [folderConfirmDeleteId, setFolderConfirmDeleteId] = useState<string | null>(null);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
@@ -58,8 +60,12 @@ export default function Sidebar({
     folderId: string
   ) => {
     e.stopPropagation();
-    if (!confirm("Delete this folder? Notes will be moved to 'All Notes'."))
+    
+    if (folderConfirmDeleteId !== folderId) {
+      setFolderConfirmDeleteId(folderId);
+      setTimeout(() => setFolderConfirmDeleteId(null), 3000);
       return;
+    }
 
     try {
       const res = await fetch(`/api/folders/${folderId}`, {
@@ -92,7 +98,7 @@ export default function Sidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 bg-stone-50 dark:bg-stone-950 border-r border-stone-200 dark:border-stone-800 flex flex-col transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:z-auto ${
+        className={`fixed top-0 left-0 z-40 h-full w-64 bg-stone-50 dark:bg-stone-950 border-r border-stone-200 dark:border-stone-800 flex flex-col pb-8 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:z-auto md:pb-0 shadow-2xl md:shadow-none ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -101,7 +107,7 @@ export default function Sidebar({
           <h2 className="text-lg font-bold tracking-tight">NotesX</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors md:hidden"
+            className="p-1 rounded-full hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors md:hidden cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -115,10 +121,10 @@ export default function Sidebar({
               onSelectFolder(null);
               onClose();
             }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
               selectedFolderId === null
-                ? "bg-stone-200 dark:bg-stone-800 text-stone-900 dark:text-stone-100"
-                : "text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900"
+                ? "bg-stone-200/70 dark:bg-stone-800/70 text-stone-900 dark:text-stone-100 shadow-sm"
+                : "text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900/50"
             }`}
           >
             <FileText className="w-4 h-4 shrink-0" />
@@ -126,29 +132,40 @@ export default function Sidebar({
           </button>
 
           {/* Folder items */}
-          {folders.map((folder) => (
-            <button
-              key={folder._id}
-              onClick={() => {
-                onSelectFolder(folder._id);
-                onClose();
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group ${
-                selectedFolderId === folder._id
-                  ? "bg-stone-200 dark:bg-stone-800 text-stone-900 dark:text-stone-100"
-                  : "text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900"
-              }`}
-            >
-              <Folder className="w-4 h-4 shrink-0" />
-              <span className="truncate flex-1 text-left">{folder.name}</span>
-              <span
-                onClick={(e) => handleDeleteFolder(e, folder._id)}
-                className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-stone-300 dark:hover:bg-stone-700 hover:text-red-500 transition-all"
+          {folders.length === 0 ? (
+            <div className="py-8 px-3 text-center">
+              <p className="text-xs text-stone-400 dark:text-stone-500 font-medium">Create your first folder</p>
+            </div>
+          ) : (
+            folders.map((folder) => (
+              <button
+                key={folder._id}
+                onClick={() => {
+                  onSelectFolder(folder._id);
+                  onClose();
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group cursor-pointer ${
+                  selectedFolderId === folder._id
+                    ? "bg-stone-200/70 dark:bg-stone-800/70 text-stone-900 dark:text-stone-100 shadow-sm"
+                    : "text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900/50"
+                }`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
-              </span>
-            </button>
-          ))}
+                <Folder className="w-4 h-4 shrink-0" />
+                <span className="truncate flex-1 text-left">{folder.name}</span>
+                <span
+                  onClick={(e) => handleDeleteFolder(e, folder._id)}
+                  className={`px-2 py-1 rounded-full transition-all cursor-pointer text-xs font-medium ${
+                    folderConfirmDeleteId === folder._id
+                      ? "bg-red-500 text-white hover:bg-red-600 opacity-100"
+                      : "opacity-0 group-hover:opacity-100 hover:bg-stone-300 dark:hover:bg-stone-700 hover:text-red-500"
+                  }`}
+                  title="Delete Folder"
+                >
+                  {folderConfirmDeleteId === folder._id ? "Confirm?" : <Trash2 className="w-3.5 h-3.5" />}
+                </span>
+              </button>
+            ))
+          )}
         </nav>
 
         {/* New folder input */}
@@ -167,7 +184,7 @@ export default function Sidebar({
               <button
                 onClick={handleCreateFolder}
                 disabled={loading || !newFolderName.trim()}
-                className="px-3 py-2 text-sm bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-900 rounded-lg font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50"
+                className="px-3 py-2 text-sm bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-900 rounded-lg font-medium hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {loading ? "..." : "Add"}
               </button>
@@ -175,12 +192,25 @@ export default function Sidebar({
           ) : (
             <button
               onClick={() => setIsCreating(true)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-900 rounded-xl transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-900 rounded-xl transition-colors cursor-pointer"
             >
               <FolderPlus className="w-4 h-4" />
               <span>New Folder</span>
             </button>
           )}
+        </div>
+
+        {/* Logout button */}
+        <div className="px-3 pb-4 pt-2">
+          <form action={logout}>
+            <button
+              type="submit"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-900 rounded-xl transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign out</span>
+            </button>
+          </form>
         </div>
       </aside>
     </>
