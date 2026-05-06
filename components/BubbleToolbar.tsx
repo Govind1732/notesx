@@ -1,6 +1,7 @@
 "use client";
 
 import { Editor } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Bold,
@@ -59,7 +60,7 @@ export default function BubbleToolbar({ editor }: BubbleToolbarProps) {
     }
 
     // Don't show on node selections (images etc)
-    if (editor.state.selection.node) {
+    if (editor.state.selection instanceof NodeSelection) {
       setIsVisible(false);
       return;
     }
