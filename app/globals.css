@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #1c1917;
+}
+
+.dark {
+  --background: #0c0a09;
+  --foreground: #e7e5e4;
 }
 
 @theme inline {
@@ -12,17 +19,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c0a09;
-    --foreground: #e7e5e4;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,10 +35,8 @@ body {
   caret-color: #78716c;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content {
-    caret-color: #a8a29e;
-  }
+.dark .tiptap-content {
+  caret-color: #a8a29e;
 }
 
 .tiptap-content > *:first-child {
@@ -48,11 +46,15 @@ body {
 /* ── Paragraphs ── */
 
 .tiptap-content p {
-  font-size: 16px;
-  line-height: 1.8;
-  color: var(--foreground);
-  margin: 0.15em 0;
+  font-size: 17px;
+  line-height: 1.7;
+  color: #374151;
+  margin: 0.5em 0;
   word-break: break-word;
+}
+
+.dark .tiptap-content p {
+  color: #d1d5db;
 }
 
 /* Placeholder — empty editor */
@@ -65,10 +67,8 @@ body {
   font-style: normal;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content p.is-editor-empty:first-child::before {
-    color: #44403c;
-  }
+.dark .tiptap-content p.is-editor-empty:first-child::before {
+  color: #44403c;
 }
 
 /* Placeholder — empty nodes (non-first) */
@@ -80,37 +80,35 @@ body {
   height: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content .is-empty::before {
-    color: #44403c;
-  }
+.dark .tiptap-content .is-empty::before {
+  color: #44403c;
 }
 
 /* ── Headings ── */
 
 .tiptap-content h1 {
-  font-size: 1.875em;
+  font-size: 2.2em;
   font-weight: 700;
-  line-height: 1.25;
-  margin: 1.4em 0 0.5em;
-  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin: 1.5em 0 0.5em;
+  letter-spacing: -0.02em;
   color: var(--foreground);
 }
 
 .tiptap-content h2 {
-  font-size: 1.375em;
+  font-size: 1.5em;
   font-weight: 600;
   line-height: 1.3;
-  margin: 1.2em 0 0.4em;
+  margin: 1.4em 0 0.5em;
   letter-spacing: -0.015em;
   color: var(--foreground);
 }
 
 .tiptap-content h3 {
-  font-size: 1.125em;
+  font-size: 1.2em;
   font-weight: 600;
   line-height: 1.4;
-  margin: 1em 0 0.3em;
+  margin: 1.2em 0 0.4em;
   color: var(--foreground);
 }
 
@@ -157,10 +155,8 @@ body {
   color: #a8a29e;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content ul:not([data-type="taskList"]) li::before {
-    color: #57534e;
-  }
+.dark .tiptap-content ul:not([data-type="taskList"]) li::before {
+  color: #57534e;
 }
 
 .tiptap-content ul:not([data-type="taskList"]) li p {
@@ -193,10 +189,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content ol li::before {
-    color: #57534e;
-  }
+.dark .tiptap-content ol li::before {
+  color: #57534e;
 }
 
 .tiptap-content ol li p {
@@ -249,19 +243,17 @@ body {
   border-color: #292524;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"] {
-    border-color: #44403c;
-  }
+.dark .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"] {
+  border-color: #44403c;
+}
 
-  .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"]:hover {
-    border-color: #78716c;
-  }
+.dark .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"]:hover {
+  border-color: #78716c;
+}
 
-  .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
-    background-color: #d6d3d1;
-    border-color: #d6d3d1;
-  }
+.dark .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  background-color: #d6d3d1;
+  border-color: #d6d3d1;
 }
 
 .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
@@ -276,10 +268,8 @@ body {
   transform: rotate(45deg);
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
-    border-color: #1c1917;
-  }
+.dark .tiptap-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+  border-color: #1c1917;
 }
 
 .tiptap-content ul[data-type="taskList"] li[data-checked="true"] > div > p {
@@ -317,6 +307,12 @@ body {
   border-radius: 8px;
 }
 
+.tiptap-content .tiptap-image[data-is-uploading="true"] {
+  opacity: 0.5;
+  filter: blur(4px);
+  cursor: wait;
+}
+
 /* ── Horizontal Rule ── */
 
 .tiptap-content hr {
@@ -326,10 +322,8 @@ body {
   margin: 2em 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content hr {
-    background: linear-gradient(to right, transparent, #292524 20%, #292524 80%, transparent);
-  }
+.dark .tiptap-content hr {
+  background: linear-gradient(to right, transparent, #292524 20%, #292524 80%, transparent);
 }
 
 /* ── Blockquote ── */
@@ -341,15 +335,35 @@ body {
   color: #78716c;
 }
 
-.tiptap-content blockquote p {
-  color: inherit;
+/* ── Callouts ── */
+
+.tiptap-content .callout-block {
+  display: flex;
+  gap: 1em;
+  padding: 1.25em;
+  background: #fdfcfb;
+  border: 1px solid #f3f2f1;
+  border-radius: 12px;
+  margin: 1.5em 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content blockquote {
-    border-left-color: #44403c;
-    color: #a8a29e;
-  }
+.dark .tiptap-content .callout-block {
+  background: #111111;
+  border-color: #222222;
+}
+
+.tiptap-content .callout-block::before {
+  content: "💡";
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.tiptap-content .callout-block > div {
+  flex: 1;
+}
+
+.tiptap-content .callout-block p {
+  margin: 0;
 }
 
 /* ── Code ── */
@@ -363,11 +377,9 @@ body {
   color: #c2410c;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content code {
-    background: #1c1917;
-    color: #fb923c;
-  }
+.dark .tiptap-content code {
+  background: #1c1917;
+  color: #fb923c;
 }
 
 .tiptap-content pre {
@@ -387,23 +399,76 @@ body {
   color: var(--foreground);
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content pre {
-    background: #1c1917;
-    border-color: #292524;
-  }
+.dark .tiptap-content pre {
+  background: #1c1917;
+  border-color: #292524;
 }
 
-/* ── Selection ── */
+/* ── Tables ── */
 
-.tiptap-content ::selection {
-  background-color: rgba(168, 162, 158, 0.25);
+.tiptap-content table {
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  table-layout: fixed;
+  width: 100%;
+  overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tiptap-content ::selection {
-    background-color: rgba(168, 162, 158, 0.2);
-  }
+.tiptap-content table td,
+.tiptap-content table th {
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 8px 12px;
+  position: relative;
+  vertical-align: top;
+}
+
+.dark .tiptap-content table td,
+.dark .tiptap-content table th {
+  border-color: #262626;
+}
+
+.tiptap-content table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  text-align: left;
+}
+
+.dark .tiptap-content table th {
+  background-color: #171717;
+}
+
+.tiptap-content table .selectedCell:after {
+  background: rgba(200, 200, 255, 0.4);
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.tiptap-content table .column-resize-handle {
+  background-color: #3b82f6;
+  bottom: -2px;
+  position: absolute;
+  right: -2px;
+  pointer-events: none;
+  top: 0;
+  width: 4px;
+}
+
+.tiptap-content .tableWrapper {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.tiptap-content .resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
 }
 
 /* ── Bubble Toolbar ── */
@@ -411,20 +476,23 @@ body {
 .bubble-toolbar {
   display: flex;
   align-items: center;
-  gap: 1px;
-  background: #1c1917;
-  border-radius: 8px;
-  padding: 3px;
+  gap: 2px;
+  background: rgba(28, 25, 23, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 4px;
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
-  animation: bubbleIn 0.15s ease-out;
+    0 10px 30px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  animation: bubbleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes bubbleIn {
   from {
     opacity: 0;
-    transform: translateY(4px) scale(0.97);
+    transform: translateY(8px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -435,25 +503,27 @@ body {
 /* ── Slash Menu ── */
 
 .slash-menu {
-  background: var(--background);
-  border: 1px solid #e7e5e4;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(0, 0, 0, 0.03);
-  padding: 4px;
-  min-width: 220px;
+    0 12px 40px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  padding: 6px;
+  min-width: 240px;
   max-height: 320px;
   overflow-y: auto;
-  animation: slashIn 0.12s ease-out;
+  animation: slashIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .slash-menu {
-    background: #1c1917;
-    border-color: #292524;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  }
+.dark .slash-menu {
+  background: rgba(28, 25, 23, 0.75);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
 @keyframes slashIn {
@@ -487,11 +557,9 @@ body {
   background: #f5f5f4;
 }
 
-@media (prefers-color-scheme: dark) {
-  .slash-menu-item:hover,
-  .slash-menu-item.is-selected {
-    background: #292524;
-  }
+.dark .slash-menu-item:hover,
+.dark .slash-menu-item.is-selected {
+  background: #292524;
 }
 
 .slash-menu-icon {
@@ -508,11 +576,9 @@ body {
   color: #57534e;
 }
 
-@media (prefers-color-scheme: dark) {
-  .slash-menu-icon {
-    background: #292524;
-    color: #a8a29e;
-  }
+.dark .slash-menu-icon {
+  background: #292524;
+  color: #a8a29e;
 }
 
 /* ── Tippy overrides ── */

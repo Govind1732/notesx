@@ -1,37 +1,46 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/db";
+import { withAuth } from "@/lib/api-handler";
 import Folder from "@/models/Folder";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { FolderSchema, FolderOrderSchema } from "@/lib/validations";
 
-export async function GET() {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(async (request, { user }) => {
+  const folders = await Folder.find({ userId: user.id }).sort({
+    order: 1,
+    createdAt: -1,
+  });
+  return NextResponse.json(folders);
+});
 
-    await dbConnect();
-    const folders = await Folder.find({ userId: user.id }).sort({ createdAt: -1 });
-    return NextResponse.json(folders);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+export const PATCH = withAuth(async (request, { user }) => {
+  const body = await request.json();
+  const { order } = FolderOrderSchema.parse(body);
 
-export async function POST(request: Request) {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await Promise.all(
+    order.map((item: { id: string; order: number }) =>
+      Folder.findOneAndUpdate(
+        { _id: item.id, userId: user.id },
+        { order: item.order },
+      ),
+    ),
+  );
 
-    await dbConnect();
-    const body = await request.json();
-    const folderData = { ...body, userId: user.id };
-    const folder = await Folder.create(folderData);
-    return NextResponse.json(folder, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-}
+  const folders = await Folder.find({ userId: user.id }).sort({
+    order: 1,
+    createdAt: -1,
+  });
+  return NextResponse.json(folders);
+});
+
+export const POST = withAuth(async (request, { user }) => {
+  const body = await request.json();
+  const validatedData = FolderSchema.parse(body);
+
+  const highestOrderFolder = await Folder.findOne({ userId: user.id })
+    .sort({ order: -1 })
+    .lean();
+  const nextOrder = (highestOrderFolder as any)?.order !== undefined ? (highestOrderFolder as any).order + 1 : 0;
+
+  const folderData = { ...validatedData, userId: user.id, order: nextOrder };
+  const folder = await Folder.create(folderData);
+  return NextResponse.json(folder, { status: 201 });
+});

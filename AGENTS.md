@@ -312,3 +312,148 @@ Stack: Next.js (App Router), TypeScript, Tailwind CSS, MongoDB
 - Design NotesX as a writing workspace, not an admin dashboard
 - Use subtle depth and spacing
 - Reduce visual clutter
+
+## Storage Rules
+
+- Use Supabase Storage for image uploads
+- Store only image URLs in MongoDB
+- Optimize image loading for fast editor experience
+- Avoid storing base64 or binary image data in database
+
+## Image Performance Rules
+
+- Prioritize instant image loading
+- Use responsive image rendering
+- Avoid heavy image transformations
+- Ensure smooth inline image experience
+
+## Rename UX Rules
+
+- Support inline renaming for folders and notes
+- Avoid modal-based rename interactions
+- Use desktop-like interactions:
+  - F2 to rename
+  - Enter to save
+  - Escape to cancel
+  - Blur to auto-save
+
+## Keyboard Interaction Rules
+
+- Support keyboard-first workflows
+- Keep interactions fast and unobtrusive
+- Prevent accidental rename triggers while typing in editor
+
+## Focus Management Rules
+
+- Auto-focus rename input
+- Select entire existing name on rename start
+- Restore focus gracefully after save/cancel
+
+## File Architecture Rules
+
+- File name and document title are separate concepts
+- File name is mandatory
+- Document title inside editor is optional
+
+## Editor Header Rules
+
+- Use breadcrumb-style navigation
+- Show:
+  Workspace / Folder / FileName
+
+- Last breadcrumb item should be editable inline
+
+## Save UX Rules
+
+- Prefer silent autosave
+- Avoid explicit save buttons in editor header
+
+## Delete UX Rules
+
+- Delete actions should live in:
+  - context menus
+  - kebab menus
+  - right-click menus
+
+- Avoid destructive primary buttons in header
+
+## Writing Experience Rules
+
+- Editor content should feel independent from filesystem metadata
+- Avoid duplicated titles between sidebar and editor
+
+## Metadata Visibility Rules
+
+- Avoid persistent system metadata above editor content
+- Hide autosave status unless needed
+- Keep writing surface clean and immersive
+
+## Editor Header Rules
+
+- Breadcrumb should remain minimal
+- Avoid extra status text near content area
+
+## Delete Interaction Rules
+
+- Delete actions should appear contextually on hover
+- Notes and folders should support inline delete actions
+- Avoid global destructive buttons
+
+## Writing Experience Rules
+
+- Prioritize immersive writing experience over visible system information
+- Reduce UI chrome around editor content
+
+## Data Fetching Rules
+
+- Use TanStack Query for server state caching
+- Avoid repetitive API refetches during folder switching
+- Prefer cached instant rendering with background revalidation
+
+## Cache Rules
+
+- Cache folders, notes lists, and note content
+- Use stale-while-revalidate patterns
+- Optimize for workspace responsiveness
+
+## Performance Rules
+
+- Folder switching should feel instant after first load
+- Avoid loading spinners for already-cached data
+- Minimize unnecessary API requests
+
+## State Management Rules
+
+- Use React Query for server state
+- Use local React state for UI state
+- Keep editor state isolated from global caches
+
+## Drag and Drop Rules
+
+- Use dnd-kit for drag/drop interactions
+- Avoid deprecated drag libraries
+
+## Notes Movement Rules
+
+- Notes should support dragging between folders
+- Folder hover states should be subtle and elegant
+
+## Folder Ordering Rules
+
+- Folders should support sortable drag reordering
+- Persist folder order in database
+
+## Interaction Rules
+
+- Drag interactions should feel soft and native
+- Avoid aggressive animations or layout jumps
+
+## Performance Rules
+
+- Minimize rerenders during drag operations
+- Memoize draggable items when possible
+
+## UX Rules
+
+- Prefer optimistic UI updates during drag operations
+- Avoid blocking UI while persisting drag changes

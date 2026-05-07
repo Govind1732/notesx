@@ -35,10 +35,10 @@ function BubbleButton({
         onClick();
       }}
       title={title}
-      className={`p-1.5 rounded-md transition-all duration-100 cursor-pointer ${
+      className={`p-1.5 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center ${
         isActive
-          ? "bg-white/20 text-white"
-          : "text-stone-300 hover:text-white hover:bg-white/10"
+          ? "bg-white/20 text-white shadow-sm"
+          : "text-white/60 hover:text-white hover:bg-white/10"
       }`}
     >
       {children}

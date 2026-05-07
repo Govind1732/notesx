@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 
 export interface INote extends mongoose.Document {
-  title: string;
+  fileName: string;
+  title?: string | null;
   content: any; // Tiptap JSON document
   folderId?: mongoose.Types.ObjectId | null;
   userId: string;
@@ -11,10 +12,17 @@ export interface INote extends mongoose.Document {
 
 const NoteSchema = new mongoose.Schema<INote>(
   {
+    fileName: {
+      type: String,
+      required: [true, "Please provide a file name"],
+      maxlength: [100, "File name cannot be more than 100 characters"],
+      trim: true,
+    },
     title: {
       type: String,
-      required: [true, "Please provide a title"],
       maxlength: [100, "Title cannot be more than 100 characters"],
+      trim: true,
+      default: null,
     },
     content: {
       type: mongoose.Schema.Types.Mixed,
@@ -32,8 +40,13 @@ const NoteSchema = new mongoose.Schema<INote>(
   },
   {
     timestamps: true, // Automatically manages createdAt and updatedAt
-  }
+  },
 );
 
+// Add compound index for performance
+NoteSchema.index({ userId: 1, folderId: 1 });
+NoteSchema.index({ userId: 1, updatedAt: -1 });
+
 // Prevent mongoose from recreating the model if it already exists
-export default mongoose.models.Note || mongoose.model<INote>("Note", NoteSchema);
+export default mongoose.models.Note ||
+  mongoose.model<INote>("Note", NoteSchema);

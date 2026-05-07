@@ -1,64 +1,64 @@
-import { NextResponse, NextRequest } from "next/server";
-import cloudinary from "@/lib/cloudinary";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api-handler";
 
 // Max file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-export async function POST(request: NextRequest) {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const POST = withAuth(async (request, { user, supabase }) => {
+  const formData = await request.formData();
+  const file = formData.get("file") as File | null;
 
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+  if (!file) {
+    return NextResponse.json({ error: "No file provided" }, { status: 400 });
+  }
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    // Validate file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed." },
-        { status: 400 }
-      );
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size is 5MB." },
-        { status: 400 }
-      );
-    }
-
-    // Convert file to base64 data URI for Cloudinary upload
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
-
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(base64, {
-      folder: "notesx",
-      resource_type: "image",
-    });
-
-    return NextResponse.json({
-      url: result.secure_url,
-      public_id: result.public_id,
-    });
-  } catch (error: any) {
-    console.error("Upload error:", error);
+  // Validate file type
+  if (!ALLOWED_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { error: error.message || "Upload failed" },
-      { status: 500 }
+      {
+        error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.",
+      },
+      { status: 400 },
     );
   }
-}
+
+  // Validate file size
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json(
+      { error: "File too large. Maximum size is 5MB." },
+      { status: 400 },
+    );
+  }
+
+  // Convert file to array buffer for Supabase Storage
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+
+  // Generate unique file name
+  const fileExtension = file.name.split(".").pop() || "png";
+  const uniqueId = crypto.randomUUID();
+  const fileName = `${user.id}/${uniqueId}.${fileExtension}`;
+
+  // Upload to Supabase Storage bucket 'images'
+  const { error } = await supabase.storage
+    .from("images")
+    .upload(fileName, buffer, {
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  // Get public URL
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("images").getPublicUrl(fileName);
+
+  return NextResponse.json({
+    url: publicUrl,
+    public_id: fileName,
+  });
+});

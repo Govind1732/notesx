@@ -103,6 +103,24 @@ export const defaultSlashItems: SlashCommandItem[] = [
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run();
     },
   },
+  {
+    title: "Table",
+    description: "Insert a 3x3 table",
+    icon: "田",
+    searchTerms: ["table", "grid", "data"],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    },
+  },
+  {
+    title: "Callout",
+    description: "Important information block",
+    icon: "💡",
+    searchTerms: ["callout", "info", "warning", "important"],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).setNode("callout").run();
+    },
+  },
 ];
 
 export function filterSlashItems(query: string, items: SlashCommandItem[]): SlashCommandItem[] {

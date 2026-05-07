@@ -1,21 +1,30 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
+import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') ?? '/'
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/";
 
   if (code) {
-    const cookieStore = await cookies()
-    const supabase = createClient(cookieStore)
-    
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const supabase = await createClient();
+
+    // Exchange code for session (this triggers cookieStore.set via server.ts)
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (!error) {
-      return NextResponse.redirect(new URL(next, requestUrl.origin))
+      const isLocalEnv = process.env.NODE_ENV === "development";
+
+      if (isLocalEnv) {
+        return NextResponse.redirect(`${origin}${next}`);
+      } else {
+        // In production (Vercel), using absolute URLs with origin is safer
+        return NextResponse.redirect(`${origin}${next}`);
+      }
     }
   }
 
-  return NextResponse.redirect(new URL('/login?message=Could not verify email. Link may be invalid or expired.', requestUrl.origin))
+  return NextResponse.redirect(
+    `${origin}/login?message=Authentication failed. Please try again.`,
+  );
 }

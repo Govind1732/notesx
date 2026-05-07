@@ -8,7 +8,7 @@ export interface UploadResult {
 
 /**
  * Validates and uploads an image file to the server.
- * Returns the Cloudinary URL on success.
+ * Returns the Supabase URL on success.
  * Throws an error with a user-friendly message on failure.
  */
 export async function uploadImage(file: File): Promise<UploadResult> {

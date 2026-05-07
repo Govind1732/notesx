@@ -1,18 +1,25 @@
 "use client";
 
-import React from "react";
-
-interface Note {
-  _id: string;
-  title: string;
-  content: any; // Tiptap JSON document
-  updatedAt: string;
-}
+import {
+  Fragment,
+  useEffect,
+  useState,
+  useCallback,
+  type MouseEvent,
+} from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { Trash2 } from "lucide-react";
+import { useInlineRename } from "./useInlineRename";
+import { NoteWithPreview } from "@/hooks/useNotesQuery";
+import { useNoteMutations } from "@/hooks/useNoteMutations";
+import { memo } from "react";
 
 interface NoteItemProps {
-  note: Note;
+  note: NoteWithPreview;
   isSelected: boolean;
   onClick: () => void;
+  onDelete?: (noteId: string) => void;
+  onRenameNote?: (noteId: string, fileName: string) => void;
   searchQuery?: string;
 }
 
@@ -20,18 +27,12 @@ interface NoteItemProps {
  * Highlights matching text by wrapping matches in a <mark> element.
  * Returns plain text if no query or no match.
  */
-function HighlightText({
-  text,
-  query,
-}: {
-  text: string;
-  query: string;
-}) {
+function HighlightText({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
 
   const regex = new RegExp(
     `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-    "gi"
+    "gi",
   );
   const parts = text.split(regex);
 
@@ -46,57 +47,87 @@ function HighlightText({
             {part}
           </mark>
         ) : (
-          <React.Fragment key={i}>{part}</React.Fragment>
-        )
+          <Fragment key={i}>{part}</Fragment>
+        ),
       )}
     </>
   );
 }
 
-/**
- * Extracts plain text preview from Tiptap JSON content.
- * Falls back to handling legacy string[] content.
- */
-function getPreviewText(content: any): string {
-  if (!content) return "No content";
-
-  // Legacy string[] format
-  if (Array.isArray(content)) {
-    const filtered = content.filter((c: string) => c.trim());
-    return filtered.length > 0
-      ? filtered.slice(0, 2).join(" · ")
-      : "No content";
-  }
-
-  // Tiptap JSON format
-  if (content.type === "doc" && Array.isArray(content.content)) {
-    const texts: string[] = [];
-    const extractText = (node: any) => {
-      if (node.text) {
-        texts.push(node.text);
-      }
-      if (node.content) {
-        node.content.forEach(extractText);
-      }
-    };
-    content.content.forEach(extractText);
-    const joined = texts.join(" ").trim();
-    return joined.length > 0
-      ? joined.length > 80
-        ? joined.slice(0, 80) + "..."
-        : joined
-      : "No content";
-  }
-
-  return "No content";
-}
-
-export default function NoteItem({
+const NoteItem = memo(function NoteItem({
   note,
   isSelected,
   onClick,
+  onDelete,
+  onRenameNote,
   searchQuery = "",
 }: NoteItemProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { saveNote } = useNoteMutations(note.folderId || null);
+
+  const { attributes, listeners, setNodeRef, isDragging } =
+    useDraggable({
+      id: note._id,
+      data: { type: "note", noteId: note._id, folderId: note.folderId },
+    });
+
+  const {
+    isRenaming,
+    value,
+    setValue,
+    error,
+    inputRef,
+    startRename,
+    cancelRename,
+    saveRename,
+    handleInputKeyDown,
+  } = useInlineRename(note.fileName || "Untitled", async (trimmedFileName) => {
+    await saveNote({
+        noteId: note._id,
+        data: { fileName: trimmedFileName }
+    });
+    onRenameNote?.(note._id, trimmedFileName);
+  });
+
+  useEffect(() => {
+    if (!isSelected || isRenaming) return;
+
+    const handleF2 = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "F2") return;
+      if (
+        document.activeElement?.closest(
+          "input, textarea, [contenteditable='true']",
+        )
+      )
+        return;
+      event.preventDefault();
+      startRename();
+    };
+
+    window.addEventListener("keydown", handleF2);
+    return () => window.removeEventListener("keydown", handleF2);
+  }, [isRenaming, isSelected, startRename]);
+
+  const handleDoubleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!isSelected) onClick();
+    startRename();
+  };
+
+  const handleDeleteClick = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!onDelete) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      window.setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+
+    await onDelete(note._id);
+  };
+
   const formatDate = (dateStr: string) => {
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
@@ -104,36 +135,85 @@ export default function NoteItem({
     }).format(new Date(dateStr));
   };
 
-  const preview = getPreviewText(note.content);
-
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-5 py-4 border-b border-stone-100 dark:border-stone-800/50 transition-all duration-200 cursor-pointer ${
-        isSelected
-          ? "bg-stone-100/80 dark:bg-stone-800/50 shadow-sm relative z-10"
-          : "hover:bg-stone-50 dark:hover:bg-stone-900/40"
-      }`}
+    <div
+      ref={setNodeRef}
+      className={`relative px-2 py-0.5 group transition-all duration-300 ease-out active:scale-[0.98] ${isDragging ? "opacity-30 scale-[0.95]" : "opacity-100"}`}
+      {...attributes}
+      {...listeners}
     >
-      <h3
-        className={`text-[15px] font-semibold mb-1.5 line-clamp-1 ${
+      <button
+        onClick={onClick}
+        onDoubleClick={handleDoubleClick}
+        type="button"
+        className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer flex flex-col gap-1.5 ${
           isSelected
-            ? "text-stone-900 dark:text-stone-50"
-            : "text-stone-800 dark:text-stone-200"
+            ? "bg-black/[0.04] dark:bg-white/[0.08] relative z-10 shadow-sm"
+            : "hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
         }`}
       >
-        <HighlightText
-          text={note.title || "Untitled"}
-          query={searchQuery}
-        />
-      </h3>
-      <div className="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
-        <span>{formatDate(note.updatedAt)}</span>
-        <span>·</span>
-        <span className="truncate">
-          <HighlightText text={preview} query={searchQuery} />
-        </span>
-      </div>
-    </button>
+        <div className="flex items-center gap-3 min-h-[38px]">
+          {isRenaming ? (
+            <div className="flex-1 min-w-0">
+              <input
+                ref={inputRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onBlur={() => {
+                  void saveRename();
+                }}
+                onKeyDown={handleInputKeyDown}
+                className="w-full min-w-0 bg-transparent text-[15px] font-semibold outline-none border-none p-0 focus:ring-0"
+                aria-label="Rename note"
+              />
+              {error && (
+                <p className="mt-1 text-[12px] text-red-500">{error}</p>
+              )}
+            </div>
+          ) : (
+            <h3
+              className={`text-[15px] line-clamp-1 ${
+                isSelected
+                  ? "text-stone-900 dark:text-stone-50 font-semibold"
+                  : "text-stone-700 dark:text-stone-300 font-medium"
+              }`}
+            >
+              <HighlightText
+                text={note.fileName || "Untitled"}
+                query={searchQuery}
+              />
+            </h3>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-[13px] text-stone-500 dark:text-stone-400">
+          <span className="shrink-0">{formatDate(note.updatedAt)}</span>
+          <span className="text-stone-300 dark:text-stone-700">·</span>
+          <span className="truncate">
+            <HighlightText text={note.previewText} query={searchQuery} />
+          </span>
+        </div>
+      </button>
+
+      {onDelete && (
+        <button
+          type="button"
+          onClick={handleDeleteClick}
+          className={`absolute right-3 top-3 rounded-full p-2 transition-all duration-200 text-stone-500 bg-white/90 dark:bg-[#111111]/90 border border-transparent shadow-sm hover:border-stone-200 hover:text-rose-600 dark:hover:text-rose-400 ${
+            confirmDelete ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+          title={confirmDelete ? "Confirm delete" : "Delete note"}
+        >
+          {confirmDelete ? (
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-600">
+              Yes
+            </span>
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+        </button>
+      )}
+    </div>
   );
-}
+});
+
+export default NoteItem;

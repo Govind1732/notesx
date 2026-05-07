@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo } from "react";
 
 interface Searchable {
   _id: string;
-  title: string;
+  fileName: string;
+  title?: string | null;
   content: any; // Tiptap JSON or legacy string[]
   [key: string]: any;
 }
@@ -29,7 +30,7 @@ function extractTextFromJSON(node: any): string {
  */
 function getSearchableText(content: any): string {
   if (!content) return "";
-  
+
   // Legacy string[] format
   if (Array.isArray(content)) {
     return content.join(" ");
@@ -46,7 +47,7 @@ function getSearchableText(content: any): string {
  */
 export function useSearch<T extends Searchable>(
   items: T[],
-  debounceMs: number = 300
+  debounceMs: number = 300,
 ) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -71,11 +72,21 @@ export function useSearch<T extends Searchable>(
     if (!q) return items;
 
     return items.filter((item) => {
-      // Check title
-      if (item.title.toLowerCase().includes(q)) return true;
-      // Check content (Tiptap JSON or legacy string[])
-      const contentText = getSearchableText(item.content);
-      if (contentText.toLowerCase().includes(q)) return true;
+      // Check file name and title
+      if (item.fileName.toLowerCase().includes(q)) return true;
+      if (item.title?.toLowerCase().includes(q)) return true;
+      
+      // Use pre-computed previewText for better performance
+      const previewText = (item as any).previewText || "";
+      if (previewText.toLowerCase().includes(q)) return true;
+      
+      // Fallback to searching raw content text only if previewText is missing
+      // (though it should be there due to the select transformation)
+      if (!previewText) {
+          const contentText = getSearchableText(item.content);
+          if (contentText.toLowerCase().includes(q)) return true;
+      }
+
       return false;
     });
   }, [items, debouncedQuery]);

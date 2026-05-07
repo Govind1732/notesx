@@ -1,107 +1,68 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/db";
+import { withAuth } from "@/lib/api-handler";
 import Note from "@/models/Note";
 import Folder from "@/models/Folder";
+import { NoteUpdateSchema } from "@/lib/validations";
 
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
-
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    await dbConnect();
-    const { id } = await params;
-    const note = await Note.findOne({ _id: id, userId: user.id });
-    if (!note) {
-      return NextResponse.json({ error: "Note not found" }, { status: 404 });
-    }
-    return NextResponse.json(note);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+export const GET = withAuth(async (request, { user, params }) => {
+  const { id } = await params;
+  const note = await Note.findOne({ _id: id, userId: user.id });
+  if (!note) {
+    return NextResponse.json({ error: "Note not found" }, { status: 404 });
   }
-}
+  return NextResponse.json({
+    ...note.toObject(),
+    fileName: note.fileName || note.title || "Untitled",
+  });
+});
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const PUT = withAuth(async (request, { user, params }) => {
+  const { id } = await params;
+  const body = await request.json();
+  const validatedData = NoteUpdateSchema.parse(body);
 
-    await dbConnect();
-    const { id } = await params;
-    const body = await request.json();
+  const updateData: Record<string, any> = { ...validatedData };
 
-    // Only allow updating known fields (partial update support)
-    const updateData: Record<string, any> = {};
-    if (body.title !== undefined) updateData.title = body.title;
-    if (body.content !== undefined) updateData.content = body.content;
-    if (body.folderId !== undefined) {
-      if (!body.folderId) {
-        let untitledFolder = await Folder.findOne({ name: "untitled", userId: user.id });
-        if (!untitledFolder) {
-          untitledFolder = await Folder.create({ name: "untitled", userId: user.id });
-        }
-        updateData.folderId = untitledFolder._id;
-      } else {
-        updateData.folderId = body.folderId;
-      }
+  // Handle folder assignment if folderId is explicitly provided as null/empty
+  if (body.folderId === null || body.folderId === "") {
+    let untitledFolder = await Folder.findOne({
+      name: "untitled",
+      userId: user.id,
+    });
+    if (!untitledFolder) {
+      untitledFolder = await Folder.create({
+        name: "untitled",
+        userId: user.id,
+      });
     }
-
-    // Validate: title must not be empty if provided
-    if (updateData.title !== undefined && !updateData.title.trim()) {
-      return NextResponse.json(
-        { error: "Title cannot be empty" },
-        { status: 400 }
-      );
-    }
-
-    const note = await Note.findOneAndUpdate(
-      { _id: id, userId: user.id },
-      updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!note) {
-      return NextResponse.json({ error: "Note not found" }, { status: 404 });
-    }
-    return NextResponse.json(note);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    updateData.folderId = untitledFolder._id;
   }
-}
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const note = await Note.findOneAndUpdate(
+    { _id: id, userId: user.id },
+    updateData,
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
 
-    await dbConnect();
-    const { id } = await params;
-    const note = await Note.findOneAndDelete({ _id: id, userId: user.id });
-    if (!note) {
-      return NextResponse.json({ error: "Note not found" }, { status: 404 });
-    }
-    return NextResponse.json({ message: "Note deleted successfully" });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!note) {
+    return NextResponse.json({ error: "Note not found" }, { status: 404 });
   }
-}
+  return NextResponse.json({
+    ...note.toObject(),
+    fileName: note.fileName || note.title || "Untitled",
+  });
+});
+
+export const PATCH = PUT;
+
+export const DELETE = withAuth(async (request, { user, params }) => {
+  const { id } = await params;
+  const note = await Note.findOneAndDelete({ _id: id, userId: user.id });
+  if (!note) {
+    return NextResponse.json({ error: "Note not found" }, { status: 404 });
+  }
+  return NextResponse.json({ message: "Note deleted successfully" });
+});
